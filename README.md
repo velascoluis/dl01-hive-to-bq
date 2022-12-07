@@ -19,6 +19,8 @@ In detail the demo shows:
 
 ## Installation
 
+Deploy Golden demo and associated data generation DAGs.
+
 This repository contains a number of scripts that, on top, of the Golden Demo components bootstrap some others GCP components:
 
 * A new subnet on vpc-main called `gce-subnet` 
