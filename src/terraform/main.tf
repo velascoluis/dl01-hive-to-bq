@@ -29,8 +29,92 @@ locals {
   cloudera_image_location         = "docker.io/cloudera/quickstart:latest"
   tf_sa_id                        =  "${local.project_id}@${local.project_id}.iam.gserviceaccount.com"
   tf_sa_key_location                = "../scripts-hydrated/local_key.json"
-  hive_stage_bucket                 = "hive_stage"
+  hive_stage_bucket                 = "hive_stage-${local.project_id}"
 }
+
+/******************************************
+Org policies
+ *****************************************/
+
+resource "google_project_organization_policy" "orgPolicyUpdate_disableSerialPortLogging" {
+  project                 = "${local.project_id}"
+  constraint = "compute.disableSerialPortLogging"
+  boolean_policy {
+    enforced = false
+  }
+}
+
+resource "google_project_organization_policy" "orgPolicyUpdate_requireOsLogin" {
+  project                 = "${local.project_id}"
+  constraint = "compute.requireOsLogin"
+  boolean_policy {
+    enforced = false
+  }
+}
+
+resource "google_project_organization_policy" "orgPolicyUpdate_requireShieldedVm" {
+  project                 = "${local.project_id}"
+  constraint = "compute.requireShieldedVm"
+  boolean_policy {
+    enforced = false
+  }
+}
+
+resource "google_project_organization_policy" "orgPolicyUpdate_vmCanIpForward" {
+  project                 = "${local.project_id}"
+  constraint = "compute.vmCanIpForward"
+  list_policy {
+    allow {
+      all = true
+    }
+  }
+}
+
+resource "google_project_organization_policy" "orgPolicyUpdate_vmExternalIpAccess" {
+  project                 = "${local.project_id}"
+  constraint = "compute.vmExternalIpAccess"
+  list_policy {
+    allow {
+      all = true
+    }
+  }
+}
+
+resource "google_project_organization_policy" "orgPolicyUpdate_restrictVpcPeering" {
+  project                 = "${local.project_id}"
+  constraint = "compute.restrictVpcPeering"
+  list_policy {
+    allow {
+      all = true
+    }
+  }
+}
+
+resource "google_project_organization_policy" "orgPolicyUpdate_disableServiceAccountKeyCreation" {
+  project                 = "${local.project_id}"
+  constraint = "iam.disableServiceAccountKeyCreation"
+   boolean_policy {
+    enforced = false
+  }
+}
+
+
+
+resource "time_sleep" "sleep_after_org_policy_updates" {
+  create_duration = "3m"
+  depends_on = [
+    google_project_organization_policy.orgPolicyUpdate_disableSerialPortLogging,
+    google_project_organization_policy.orgPolicyUpdate_requireOsLogin,
+    google_project_organization_policy.orgPolicyUpdate_requireShieldedVm,
+    google_project_organization_policy.orgPolicyUpdate_vmCanIpForward,
+    google_project_organization_policy.orgPolicyUpdate_vmExternalIpAccess,
+    google_project_organization_policy.orgPolicyUpdate_restrictVpcPeering,
+    google_project_organization_policy.orgPolicyUpdate_disableServiceAccountKeyCreation,
+  ]
+}
+
+
+
 /******************************************
 Golden demo resources
  *****************************************/
@@ -41,6 +125,9 @@ resource "google_compute_network" "golden_demo_default_network" {
   name                    = "${local.vpc_nm}"
   auto_create_subnetworks = false
   mtu                     = 1460
+   depends_on = [
+    time_sleep.sleep_after_org_policy_updates
+  ]
 }
 
 /******************************************
@@ -53,9 +140,11 @@ resource "google_compute_subnetwork" "gce-subnet" {
   name          = "${local.gce_subnet_nm}"
   ip_cidr_range = "${local.gce_subnet_cidr}"
   region        = "${local.region}"
-  
   network       = google_compute_network.golden_demo_default_network.id
   private_ip_google_access = true
+  depends_on = [
+    time_sleep.sleep_after_org_policy_updates
+  ]
 
 }
 resource "google_compute_firewall" "gce-subnet-firewall-rule" {
@@ -67,7 +156,7 @@ resource "google_compute_firewall" "gce-subnet-firewall-rule" {
     protocol = "all"
   }
 
-  source_ranges = ["${local.gce_subnet_cidr}"]
+  source_ranges = ["0.0.0.0/0"]
 
   depends_on = [
     google_compute_subnetwork.gce-subnet
