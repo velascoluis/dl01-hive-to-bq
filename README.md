@@ -112,10 +112,15 @@ Change `<YOUR_PROJECT_ID>`  accordingly.
 6. Lets finally translate online one of the HIVE queries from `HiveQL` to the BigQuery SQL dialect: `GoogleSQL`, open sourced as [zetaSQL](https://github.com/google/zetasql). In a new BigQuery SQL workspace tab, click on `Enable SQL Translation` under the `More` menu.
 
 ![Enable SQL translation](assets/02.png)
+
 In the Translating from drop-down menu select `HiveQL`:
+
 ![Select HiveQL](assets/03.png)
+
 Finally copy the `HiveQL`, it will be automatically translated:
+
 ![Tanslation](assets/04.png)
+
 Execute they query and check the results back.
 
 
